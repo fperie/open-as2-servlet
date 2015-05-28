@@ -3,31 +3,41 @@ package org.openas2.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.util.List;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.openas2.ComponentNotFoundException;
 import org.openas2.OpenAS2Exception;
 import org.openas2.Session;
 import org.openas2.XMLSession;
+import org.openas2.processor.ProcessorModule;
+import org.openas2.processor.receiver.AS2HttpReceiverModule;
+import org.openas2.processor.receiver.AS2ReceiverModule;
+import org.openas2.processor.receiver.NetModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-public class OpenAs2Servlet extends HttpServlet
+public class OpenAs2Servlet extends AbstractOpenAs2Servlet
 {
 	private static final long serialVersionUID = 1L;
 
 	/** Logger for the class. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OpenAs2Servlet.class);
 
-	private static final ThreadLocal<Session> THREAD_LOCAL = new ThreadLocal<Session>();
+	private static final ThreadLocal<Session> SESSION_THREAD_LOCAL = new ThreadLocal<Session>();
+
+	private static final ThreadLocal<NetModule> MODULE_RECEIVER_THREAD_LOCAL = new ThreadLocal<NetModule>();
 
 	private String configFile;
 
@@ -43,6 +53,53 @@ public class OpenAs2Servlet extends HttpServlet
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
+		Session session = SESSION_THREAD_LOCAL.get();
+
+		if (session == null)
+		{
+			session = initSession();
+		}
+		assert session != null;
+
+		NetModule receiverModule = MODULE_RECEIVER_THREAD_LOCAL.get();
+		if (receiverModule == null)
+		{
+			receiverModule = initReceiverModule(session);
+
+			// inject http request in AS2HttpReceiverModule
+			if (receiverModule instanceof AS2HttpReceiverModule)
+			{
+				((AS2HttpReceiverModule)receiverModule).setRequest(request);
+				((AS2HttpReceiverModule)receiverModule).setResponse(response);
+			}
+
+			MODULE_RECEIVER_THREAD_LOCAL.set(receiverModule);
+		}
+		assert receiverModule != null;
+
+		processMessage(request, response, receiverModule, session);
+		((AS2HttpReceiverModule)receiverModule).setRequest(null);
+		((AS2HttpReceiverModule)receiverModule).setResponse(null);
+	}
+
+	private void processMessage(final HttpServletRequest request, final HttpServletResponse response,
+			@Nonnull final NetModule receiverModule, Session session)
+			throws ServletException, IOException
+	{
+		InetAddress remoteIp = InetAddress.getByName(request.getRemoteAddr());
+		int remotePort = request.getRemotePort();
+
+		InetAddress localIp = InetAddress.getByName(request.getLocalAddr());
+		int localPort = request.getLocalPort();
+
+		receiverModule.getHandler().handle(remoteIp, remotePort, localIp, localPort, request.getInputStream(),
+				response.getOutputStream());
+	}
+
+	@Nonnull
+	private Session initSession() throws IOException, ServletException
+	{
+		Session session;
 		InputStream isConfigFile;
 		if (StringUtils.startsWithIgnoreCase(configFile, "classpath:"))
 		{
@@ -53,66 +110,43 @@ public class OpenAs2Servlet extends HttpServlet
 			isConfigFile = FileUtils.openInputStream(new File(configFile));
 		}
 
-		Session session = THREAD_LOCAL.get();
-
-		if (session == null)
+		try
 		{
-			try
-			{
-				session = new XMLSession(isConfigFile, baseDirectory);
-				THREAD_LOCAL.set(session);
-			}
-			catch (OpenAS2Exception | ParserConfigurationException | SAXException e)
-			{
-				LOGGER.error("Impossible to parse the open-as2-core config file (" + configFile + ").", e);
-				throw new ServletException("Impossible to parse the open-as2-core config file", e);
-			}
+			session = new XMLSession(isConfigFile, baseDirectory);
+			SESSION_THREAD_LOCAL.set(session);
+		}
+		catch (OpenAS2Exception | ParserConfigurationException | SAXException e)
+		{
+			LOGGER.error("Impossible to parse the open-as2-core config file (" + configFile + ").", e);
+			throw new ServletException("Impossible to parse the open-as2-core config file", e);
 		}
 
-
-		// TODO : c'est la fete
-		// TODO : c'est la fete
-		// TODO : c'est la fete
-		// TODO : c'est la fete
-
-		response.setStatus(HttpServletResponse.SC_OK);
-		response.setContentType("text/html");
-		LOGGER.info("c'est la fete");
-		response.getWriter().println("<html><body><h1>C'est la fete du slip...</h1></body></html>");
-		response.getWriter().close();
+		return session;
 	}
 
-
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+	@Nullable
+	private NetModule initReceiverModule(@Nonnull final Session session) throws ServletException
 	{
-		forbiddenAction(response);
-	}
+		NetModule receiverModule = null;
 
-	@Override
-	protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException,
-			IOException
-	{
-		forbiddenAction(response);
-	}
+		try
+		{
+			List<ProcessorModule> modules = session.getProcessor().getModules();
+			for (ProcessorModule module : modules)
+			{
+				if (module.getClass() == AS2ReceiverModule.class || module.getClass() == AS2HttpReceiverModule.class)
+				{
+					receiverModule = (NetModule)module;
+					break;
+				}
+			}
+		}
+		catch (ComponentNotFoundException cnfe)
+		{
+			LOGGER.error("Impossible to get the as2 receiver module from as2 session.", cnfe);
+			throw new ServletException("Impossible to get the as2 receiver module from as2 session.");
+		}
 
-	@Override
-	protected void doHead(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-	{
-		forbiddenAction(response);
-	}
-
-	@Override
-	protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-	{
-		forbiddenAction(response);
-	}
-
-	private void forbiddenAction(HttpServletResponse response) throws IOException
-	{
-		response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-		response.setContentType("text/html");
-		response.getWriter().println("<html><body><p>Use POST only!</p></body></html>");
-		response.getWriter().close();
+		return receiverModule;
 	}
 }
