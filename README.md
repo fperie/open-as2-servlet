@@ -33,7 +33,7 @@ You have to configure your java webapp project as following :
 <dependency>
     <groupId>fr.fabienperie</groupId>
     <artifactId>open-as2-servlet</artifactId>
-    <version>1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 

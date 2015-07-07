@@ -65,16 +65,19 @@ public class OpenAs2Servlet extends AbstractOpenAs2Servlet
 		if (receiverModule == null)
 		{
 			receiverModule = initReceiverModule(session);
-
-			// inject http request in AS2HttpReceiverModule
-			if (receiverModule instanceof AS2HttpReceiverModule)
-			{
-				((AS2HttpReceiverModule)receiverModule).setRequest(request);
-				((AS2HttpReceiverModule)receiverModule).setResponse(response);
-			}
-
-			MODULE_RECEIVER_THREAD_LOCAL.set(receiverModule);
 		}
+
+		// inject http request in AS2HttpReceiverModule
+		if (receiverModule instanceof AS2HttpReceiverModule)
+		{
+			((AS2HttpReceiverModule)receiverModule).setRequest(request);
+			((AS2HttpReceiverModule)receiverModule).setResponse(response);
+		}
+		else
+		{
+			throw new ServletException("the as2 receiver module cannot be cast in AS2HttpReceiverModule...");
+		}
+
 		assert receiverModule != null;
 
 		processMessage(request, response, receiverModule, session);
@@ -147,6 +150,7 @@ public class OpenAs2Servlet extends AbstractOpenAs2Servlet
 			throw new ServletException("Impossible to get the as2 receiver module from as2 session.");
 		}
 
+		MODULE_RECEIVER_THREAD_LOCAL.set(receiverModule);
 		return receiverModule;
 	}
 }

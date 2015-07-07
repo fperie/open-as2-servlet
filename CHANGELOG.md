@@ -1,3 +1,6 @@
+## 1.1.1 (2015-07-07)
+ - fix bug to consume many as2 messages
+
 ## 1.1 (2015-07-06)
  - uses the as2-core dependency in version 1.1
  - initialize a CHANGELOG file
