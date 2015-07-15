@@ -53,12 +53,7 @@ public class OpenAs2Servlet extends AbstractOpenAs2Servlet
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		Session session = SESSION_THREAD_LOCAL.get();
-
-		if (session == null)
-		{
-			session = initSession();
-		}
+		final Session session = getSession();
 		assert session != null;
 
 		NetModule receiverModule = MODULE_RECEIVER_THREAD_LOCAL.get();
@@ -83,6 +78,26 @@ public class OpenAs2Servlet extends AbstractOpenAs2Servlet
 		processMessage(request, response, receiverModule, session);
 		((AS2HttpReceiverModule)receiverModule).setRequest(null);
 		((AS2HttpReceiverModule)receiverModule).setResponse(null);
+	}
+
+	/**
+	 * Get the current session else it initializes a new session.
+	 * 
+	 * @return current or new as2 session.
+	 * @throws IOException
+	 *         exception occured during this operation.
+	 * @throws ServletException
+	 *         exception occured during this operation.
+	 */
+	protected Session getSession() throws IOException, ServletException
+	{
+		Session session = SESSION_THREAD_LOCAL.get();
+
+		if (session == null)
+		{
+			session = initSession();
+		}
+		return session;
 	}
 
 	private void processMessage(final HttpServletRequest request, final HttpServletResponse response,

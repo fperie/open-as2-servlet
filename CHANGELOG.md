@@ -1,3 +1,6 @@
+## 1.2.1 (2015-07-15)
+ - add a getter to get the current as2 session in OpenAs2Servlet
+
 ## 1.2 (2015-07-15)
  - use the as2-core dependency in version 1.2
 
