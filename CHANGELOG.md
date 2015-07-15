@@ -1,3 +1,6 @@
+## 1.2 (2015-07-15)
+ - use the as2-core dependency in version 1.2
+
 ## 1.1.1 (2015-07-07)
  - fix bug to consume many as2 messages
 

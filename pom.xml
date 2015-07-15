@@ -153,7 +153,7 @@
 		<dependency>
 			<groupId>fr.fabienperie.open-as2</groupId>
 			<artifactId>open-as2-core</artifactId>
-			<version>1.1</version>
+			<version>1.2</version>
 		</dependency>
 
 		<dependency>
