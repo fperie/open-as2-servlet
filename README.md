@@ -8,7 +8,7 @@ The jar file is available in maven central repository with the following GAV:
 <dependency>
    <groupId>fr.fabienperie.open-as2</groupId>
    <artifactId>open-as2-servlet</artifactId>
-   <version>1.0</version>
+   <version>1.3</version>
 </dependency>
 ```
 
@@ -33,7 +33,7 @@ You have to configure your java webapp project as following :
 <dependency>
     <groupId>fr.fabienperie</groupId>
     <artifactId>open-as2-servlet</artifactId>
-    <version>1.1.1</version>
+    <version>1.3</version>
 </dependency>
 ```
 
@@ -79,6 +79,12 @@ You have to configure your java webapp project as following :
             filename="${openAs2Files}\files\inbox\$msg.sender.as2_id$-$msg.receiver.as2_id$-$msg.headers.message-id$"
             header="${openAs2Files}\files\inbox\msgheaders\$date.yyyy$\$date.MM$\$msg.sender.as2_id$-$msg.receiver.as2_id$-$msg.headers.message-id$"        
             protocol="as2"
+            tempdir="${openAs2Files}\files\temp" />
+            
+        <module classname="org.openas2.processor.storage.ArchiveStorageModule"
+            filename="${openAs2Files}\files\outbox\$msg.sender.as2_id$-$msg.receiver.as2_id$-$msg.headers.message-id$"
+            header="${openAs2Files}\files\outbox\msgheaders\$date.yyyy$\$date.MM$\$msg.sender.as2_id$-$msg.receiver.as2_id$-$msg.headers.message-id$"        
+            protocol="as2"
             tempdir="${openAs2Files}\files\temp" />     
             
         <module classname="org.openas2.processor.receiver.AS2HttpReceiverModule"    
@@ -118,7 +124,7 @@ where ${openAs2Files} is a system property containing the openas2 configuration 
     <attribute name="as2_mdn_to" value="http://......:8080/as2/HttpReceiver" />
     <attribute name="as2_mdn_options" value="signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha1" />
     <attribute name="encrypt" value="aes256" />
-    <attribute name="sign" value="sha1" />
+    <attribute name="sign" value="sha256" />
   </partnership>
   <partnership name="my-server-the-client">
     <sender as2_id="mipih" x509_alias="mipih" />
@@ -148,11 +154,9 @@ public class MyOpenAs2Servlet extends OpenAs2Servlet
         WorkerRegistrer.registerWorker(new IAs2Worker()
         {
             @Override
-            @Nonnull
-            public String processMessage(@Nonnull AS2Message msg)
+            public void processMessage(@Nonnull final Session session,@Nonnull final AS2Message msg)
             {
-                // return the response to send to the client.
-                return "hello world !!!";
+                // process the response...
             }
         });
     }
