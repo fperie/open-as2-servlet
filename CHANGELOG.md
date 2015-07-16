@@ -1,3 +1,6 @@
+## 1.3.1 (2015-07-16)
+ - use the as2-core dependency in version 1.3.1
+
 ## 1.3 (2015-07-16)
  - use the as2-core dependency in version 1.3
 
