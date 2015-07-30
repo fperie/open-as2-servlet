@@ -8,7 +8,7 @@ The jar file is available in maven central repository with the following GAV:
 <dependency>
    <groupId>fr.fabienperie.open-as2</groupId>
    <artifactId>open-as2-servlet</artifactId>
-   <version>1.3.1</version>
+   <version>1.3.2</version>
 </dependency>
 ```
 
@@ -33,7 +33,7 @@ You have to configure your java webapp project as following :
 <dependency>
     <groupId>fr.fabienperie</groupId>
     <artifactId>open-as2-servlet</artifactId>
-    <version>1.3.1</version>
+    <version>1.3.2</version>
 </dependency>
 ```
 
