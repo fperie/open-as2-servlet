@@ -12,6 +12,8 @@ The jar file is available in maven central repository with the following GAV:
 </dependency>
 ```
 
+## Receive an as2 message
+
 You have to configure your java webapp project as following :
 
  - bcmail-jdk16-1.46.jar and bcprov-jdk16-1.46.jar have to be on the classpath and loaded by a parent classloader
@@ -112,12 +114,12 @@ where ${openAs2Files} is a system property containing the openas2 configuration 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <partnerships>
-  <partner name="my-server" as2_id="mipih" x509_alias="mipih" email="test-server@gmail.com" />
+  <partner name="my-server" as2_id="the-server" x509_alias="the-server" email="test-server@gmail.com" />
   <partner name="the-client" as2_id="the-client" x509_alias="the-client" email="test-client@gmail.com" />
   
   <partnership name="the-client-my-server">
     <sender name="the-client" as2_id="the-client" x509_alias="the-client" email="test-client@gmail.com" />
-    <receiver name="my-server" as2_id="mipih" x509_alias="mipih" email="test-server@gmail.com" />
+    <receiver name="my-server" as2_id="the-server" x509_alias="the-server" email="test-server@gmail.com" />
     <attribute name="protocol" value="as2" />
     <attribute name="subject" value="From the-client to my-server" />
     <attribute name="as2_url" value="http://......:10080/" />
@@ -127,7 +129,7 @@ where ${openAs2Files} is a system property containing the openas2 configuration 
     <attribute name="sign" value="sha256" />
   </partnership>
   <partnership name="my-server-the-client">
-    <sender as2_id="mipih" x509_alias="mipih" />
+    <sender as2_id="the-server" x509_alias="the-server" />
     <receiver as2_id="the-client" x509_alias="the-client" />
   </partnership>
 </partnerships>
@@ -163,5 +165,30 @@ public class MyOpenAs2Servlet extends OpenAs2Servlet
 }
 ```
 	
-
 Here, configFile refers a configuration file from classpath but could also reference a file with its absolute path.
+
+
+## Send an as2 message
+
+You can easily send a message with the MessageSenderHelper utility class which contains two statics methods :
+
+ - ``` @Nonnull public MimeBodyPart prepareMessage(@Nonnull final String strMessage, @Nullable final String subContentType) throws Exception ``` : this method allows to prepare a mime body part with the content of message.
+
+
+ - ``` public void sendMessage(@Nonnull final String idAs2Sender, @Nonnull final String idAs2Receiver,
+@Nonnull final String messageId, @Nonnull final String subject, @Nonnull final MimeBodyPart body, @Nonnull final Session session) throws Exception ``` : this method allows to send really the message.
+
+
+	For example : 
+
+```java
+try
+{
+	final MimeBodyPart body = MessageSenderHelper.prepareMessage("hello world !!!", "text/plain");
+	MessageSenderHelper.sendMessage("the-client", "the-server", "msg-hello-" + System.currentTimeMillis(), "hello", body, session);
+} 
+catch (Exception e)
+{
+	LOGGER.error("impossible to send the hello world message because : ", e);
+}
+```
